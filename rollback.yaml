@@ -1,0 +1,138 @@
+---
+- name: Rollback platform stack (GitOps + Observability + Security)
+  hosts: all
+  gather_facts: false
+
+  vars:
+    kubeconfig: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
+    k8s_context: ""
+
+    # Namespaces used by the stack
+    ns_gitops: argocd
+    ns_observability: observability
+    ns_security: security
+
+    # Helm release names (must match what you installed)
+    release_argocd: argocd
+    release_prom_stack: kube-prom-stack
+    release_loki: loki
+    release_promtail: promtail
+    release_cert_manager: cert-manager
+    release_kyverno: kyverno
+    release_external_secrets: external-secrets
+    release_trivy_operator: trivy-operator
+
+    # Toggle what to remove (set false if you want to keep something)
+    remove_gitops: true
+    remove_observability: true
+    remove_security: true
+
+    # Also delete namespaces at the end
+    remove_namespaces: true
+
+  tasks:
+    # ---------------------------
+    # GitOps (Argo CD)
+    # ---------------------------
+    - name: Uninstall Argo CD (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_argocd }}"
+        release_namespace: "{{ ns_gitops }}"
+        state: absent
+        wait: true
+      when: remove_gitops | bool
+
+    # ---------------------------
+    # Observability
+    # ---------------------------
+    - name: Uninstall Promtail (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_promtail }}"
+        release_namespace: "{{ ns_observability }}"
+        state: absent
+        wait: true
+      when: remove_observability | bool
+
+    - name: Uninstall Loki (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_loki }}"
+        release_namespace: "{{ ns_observability }}"
+        state: absent
+        wait: true
+      when: remove_observability | bool
+
+    - name: Uninstall kube-prometheus-stack (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_prom_stack }}"
+        release_namespace: "{{ ns_observability }}"
+        state: absent
+        wait: true
+      when: remove_observability | bool
+
+    # ---------------------------
+    # Security
+    # ---------------------------
+    - name: Uninstall Trivy Operator (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_trivy_operator }}"
+        release_namespace: "{{ ns_security }}"
+        state: absent
+        wait: true
+      when: remove_security | bool
+
+    - name: Uninstall External Secrets (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_external_secrets }}"
+        release_namespace: "{{ ns_security }}"
+        state: absent
+        wait: true
+      when: remove_security | bool
+
+    - name: Uninstall Kyverno (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_kyverno }}"
+        release_namespace: "{{ ns_security }}"
+        state: absent
+        wait: true
+      when: remove_security | bool
+
+    - name: Uninstall cert-manager (helm)
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        name: "{{ release_cert_manager }}"
+        release_namespace: "{{ ns_security }}"
+        state: absent
+        wait: true
+      when: remove_security | bool
+
+    # ---------------------------
+    # Namespace cleanup (final)
+    # ---------------------------
+    - name: Delete namespaces (this removes remaining resources)
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig }}"
+        context: "{{ k8s_context | default(omit) }}"
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: "{{ item }}"
+      loop:
+        - "{{ ns_gitops }}"
+        - "{{ ns_observability }}"
+        - "{{ ns_security }}"
+      when: remove_namespaces | bool
