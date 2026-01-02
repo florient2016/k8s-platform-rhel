@@ -1,0 +1,50 @@
+- name: Add Prometheus Community repo
+  kubernetes.core.helm_repository:
+    name: prom
+    repo_url: "{{ prom_stack_repo }}"
+
+- name: Install/upgrade kube-prometheus-stack
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: kube-prom-stack
+    chart_ref: "prom/{{ prom_stack_chart }}"
+    chart_version: "{{ prom_stack_version | default(omit) }}"
+    release_namespace: "{{ ns_observability }}"
+    create_namespace: false
+    values: "{{ lookup('template', 'kube-prom-stack-values.yml.j2') | from_yaml }}"
+    wait: true
+    timeout: 1200
+
+- name: Add Grafana repo (for Loki/Promtail)
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: "{{ loki_repo }}"
+  when: enable_loki | bool
+
+- name: Install/upgrade Loki
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: loki
+    chart_ref: "grafana/{{ loki_chart }}"
+    chart_version: "{{ loki_version | default(omit) }}"
+    release_namespace: "{{ ns_observability }}"
+    create_namespace: false
+    values: "{{ lookup('template', 'loki-values.yml.j2') | from_yaml }}"
+    wait: true
+    timeout: 1200
+  when: enable_loki | bool
+
+- name: Install/upgrade Promtail
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: promtail
+    chart_ref: "grafana/{{ promtail_chart }}"
+    chart_version: "{{ promtail_version | default(omit) }}"
+    release_namespace: "{{ ns_observability }}"
+    create_namespace: false
+    wait: true
+    timeout: 900
+  when: enable_loki | bool and enable_promtail | bool

@@ -1,0 +1,17 @@
+- name: Add Argo Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: "{{ argocd_chart_repo }}"
+
+- name: Install/upgrade Argo CD
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: argocd
+    chart_ref: "argo/{{ argocd_chart_name }}"
+    chart_version: "{{ argocd_chart_version | default(omit) }}"
+    release_namespace: "{{ ns_gitops }}"
+    create_namespace: false
+    values: "{{ lookup('template', 'argocd-values.yml.j2') | from_yaml }}"
+    wait: true
+    timeout: 900

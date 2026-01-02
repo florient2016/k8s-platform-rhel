@@ -1,0 +1,78 @@
+- name: Add Jetstack repo (cert-manager)
+  kubernetes.core.helm_repository:
+    name: jetstack
+    repo_url: "{{ cert_manager_repo }}"
+  when: enable_cert_manager | bool
+
+- name: Install/upgrade cert-manager
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: cert-manager
+    chart_ref: "jetstack/{{ cert_manager_chart }}"
+    chart_version: "{{ cert_manager_version | default(omit) }}"
+    release_namespace: "{{ ns_security }}"
+    create_namespace: false
+    values:
+      installCRDs: "{{ cert_manager_install_crds }}"
+    wait: true
+    timeout: 900
+  when: enable_cert_manager | bool
+
+- name: Add Kyverno repo
+  kubernetes.core.helm_repository:
+    name: kyverno
+    repo_url: "{{ kyverno_repo }}"
+  when: enable_kyverno | bool
+
+- name: Install/upgrade Kyverno
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: kyverno
+    chart_ref: "kyverno/{{ kyverno_chart }}"
+    chart_version: "{{ kyverno_version | default(omit) }}"
+    release_namespace: "{{ ns_security }}"
+    create_namespace: false
+    values: "{{ lookup('template', 'kyverno-values.yml.j2') | from_yaml }}"
+    wait: true
+    timeout: 900
+  when: enable_kyverno | bool
+
+- name: Add External Secrets repo
+  kubernetes.core.helm_repository:
+    name: external-secrets
+    repo_url: "{{ external_secrets_repo }}"
+  when: enable_external_secrets | bool
+
+- name: Install/upgrade External Secrets Operator
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: external-secrets
+    chart_ref: "external-secrets/{{ external_secrets_chart }}"
+    chart_version: "{{ external_secrets_version | default(omit) }}"
+    release_namespace: "{{ ns_security }}"
+    create_namespace: false
+    wait: true
+    timeout: 900
+  when: enable_external_secrets | bool
+
+- name: Add Aqua Security repo (Trivy)
+  kubernetes.core.helm_repository:
+    name: aqua
+    repo_url: "{{ trivy_repo }}"
+  when: enable_trivy_operator | bool
+
+- name: Install/upgrade Trivy Operator
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    name: trivy-operator
+    chart_ref: "aqua/{{ trivy_chart }}"
+    chart_version: "{{ trivy_version | default(omit) }}"
+    release_namespace: "{{ ns_security }}"
+    create_namespace: false
+    wait: true
+    timeout: 900
+  when: enable_trivy_operator | bool

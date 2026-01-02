@@ -1,0 +1,13 @@
+server:
+  ingress:
+    enabled: true
+    ingressClassName: "{{ argocd_ingress_class }}"
+    hosts:
+      - "{{ argocd_domain }}"
+    tls:
+      - secretName: "{{ argocd_tls_secret }}"
+        hosts:
+          - "{{ argocd_domain }}"
+configs:
+  params:
+    server.insecure: "false"

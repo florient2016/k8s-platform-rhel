@@ -1,2 +1,26 @@
----
-# tasks file for k8s-platform
+- name: Ensure required namespaces exist
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig }}"
+    context: "{{ k8s_context | default(omit) }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  loop:
+    - "{{ ns_gitops }}"
+    - "{{ ns_observability }}"
+    - "{{ ns_security }}"
+
+- name: Deploy GitOps stack
+  ansible.builtin.include_tasks: gitops.yml
+  when: enable_gitops | bool
+
+- name: Deploy Observability stack
+  ansible.builtin.include_tasks: observability.yml
+  when: enable_observability | bool
+
+- name: Deploy Security stack
+  ansible.builtin.include_tasks: security.yml
+  when: enable_security | bool

@@ -1,2 +1,68 @@
 ---
 # defaults file for k8s-platform
+kubeconfig: "{{ lookup('env','KUBECONFIG') | default('~/.kube/config', true) }}"
+k8s_context: ""
+
+# ---- Namespaces
+ns_gitops: argocd
+ns_observability: observability
+ns_security: security
+
+# ---- GitOps (Argo CD)
+enable_gitops: true
+argocd_chart_repo: "https://argoproj.github.io/argo-helm"
+argocd_chart_name: "argo-cd"
+argocd_chart_version: ""   # optional pin
+argocd_domain: "argocd.example.com"
+argocd_ingress_class: "nginx"   # adapt to your ingress
+argocd_tls_secret: "argocd-tls" # if you pre-create cert
+
+# ---- Observability
+enable_observability: true
+prom_stack_repo: "https://prometheus-community.github.io/helm-charts"
+prom_stack_chart: "kube-prometheus-stack"
+prom_stack_version: ""
+grafana_domain: "grafana.example.com"
+prom_domain: "prometheus.example.com"
+observability_ingress_class: "nginx"
+
+enable_loki: true
+loki_repo: "https://grafana.github.io/helm-charts"
+loki_chart: "loki"
+loki_version: ""
+enable_promtail: true
+promtail_chart: "promtail"
+promtail_version: ""
+
+# ---- Security
+enable_security: true
+
+# cert-manager
+enable_cert_manager: true
+cert_manager_repo: "https://charts.jetstack.io"
+cert_manager_chart: "cert-manager"
+cert_manager_version: ""
+cert_manager_install_crds: true
+
+# policy (Kyverno)
+enable_kyverno: true
+kyverno_repo: "https://kyverno.github.io/kyverno/"
+kyverno_chart: "kyverno"
+kyverno_version: ""
+
+# External Secrets (optional but common)
+enable_external_secrets: true
+external_secrets_repo: "https://charts.external-secrets.io"
+external_secrets_chart: "external-secrets"
+external_secrets_version: ""
+
+# Trivy Operator (image & config scanning in-cluster)
+enable_trivy_operator: true
+trivy_repo: "https://aquasecurity.github.io/helm-charts/"
+trivy_chart: "trivy-operator"
+trivy_version: ""
+
+# Storage assumptions (on-prem)
+# - If you have a default StorageClass set, leave these.
+# - Otherwise pin a storageClassName for Grafana/Prometheus/Loki PVCs.
+storage_class_name: ""   # e.g. "rook-ceph-block" or "longhorn"

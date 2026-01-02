@@ -1,0 +1,30 @@
+grafana:
+  enabled: true
+  ingress:
+    enabled: true
+    ingressClassName: "{{ observability_ingress_class }}"
+    hosts: ["{{ grafana_domain }}"]
+  persistence:
+    enabled: true
+    {% if storage_class_name %}
+    storageClassName: "{{ storage_class_name }}"
+    {% endif %}
+    size: 10Gi
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: "{{ observability_ingress_class }}"
+    hosts: ["{{ prom_domain }}"]
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          {% if storage_class_name %}
+          storageClassName: "{{ storage_class_name }}"
+          {% endif %}
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
