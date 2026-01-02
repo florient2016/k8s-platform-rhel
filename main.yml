@@ -1,0 +1,12 @@
+- name: Deploy platform stack (GitOps + Observability + Security)
+  hosts: all
+  gather_facts: false
+  roles:
+    - role: k8s_platform
+      vars:
+        kubeconfig: "~/.kube/config"
+        #k8s_context: "onprem"
+        argocd_domain: "argocd.aap.example.com"
+        grafana_domain: "grafana.aap.example.com"
+        prom_domain: "prom.aap.example.com"
+        storage_class_name: "rook-ceph-block"
